@@ -60,61 +60,34 @@ const JobList = () => {
 
   const fetchJobs = async () => {
     try {
-      // In a real app, this would be your Flask API endpoint
-      // const response = await axios.get('http://localhost:5000/api/jobs');
+      setLoading(true);
+      const response = await axios.get('http://localhost:3000/jobs');
       
-      // Mock data for demonstration
-      const mockJobs = [
-        {
-          id: 1,
-          title: 'Frontend Developer',
-          company: 'TechCorp',
-          location: 'New York',
-          jobType: 'Full-time',
-          description: 'We are looking for a skilled Frontend Developer with React experience.',
-          tags: ['React', 'JavaScript', 'Frontend'],
-          postingDate: '2023-05-15'
-        },
-        {
-          id: 2,
-          title: 'Backend Engineer',
-          company: 'DataSystems',
-          location: 'San Francisco',
-          jobType: 'Full-time',
-          description: 'Join our team to build scalable backend services.',
-          tags: ['Python', 'Java', 'Backend'],
-          postingDate: '2023-05-10'
-        },
-        {
-          id: 3,
-          title: 'UI/UX Designer',
-          company: 'CreativeMinds',
-          location: 'Remote',
-          jobType: 'Contract',
-          description: 'Design beautiful interfaces for our clients.',
-          tags: ['UI/UX', 'Figma', 'Design'],
-          postingDate: '2023-05-18'
-        },
-      ];
+      // Ensure we always have an array, even if response.data is null/undefined
+      const jobsData = Array.isArray(response?.data) ? response.data : [];
       
-      setJobs(mockJobs);
+      setJobs(jobsData);
       setLoading(false);
     } catch (error) {
       message.error('Failed to fetch jobs');
+      console.error('Error fetching jobs:', error);
+      setJobs([]); // Set to empty array on error
       setLoading(false);
     }
   };
 
   const applyFilters = () => {
-    let result = [...jobs];
+    // Ensure jobs is always an array
+    const jobsArray = Array.isArray(jobs) ? jobs : [];
+    let result = [...jobsArray];
     
     // Search filter
     if (searchText) {
       const lowerSearch = searchText.toLowerCase();
       result = result.filter(job => 
-        job.title.toLowerCase().includes(lowerSearch) || 
-        job.company.toLowerCase().includes(lowerSearch)
-      )
+        job.title?.toLowerCase().includes(lowerSearch) || 
+        job.company?.toLowerCase().includes(lowerSearch)
+      );
     }
     
     // Job type filter
@@ -130,8 +103,8 @@ const JobList = () => {
     // Tags filter
     if (selectedTags.length > 0) {
       result = result.filter(job => 
-        selectedTags.every(tag => job.tags.includes(tag))
-      )
+        job.tags && selectedTags.every(tag => job.tags.includes(tag))
+      );
     }
     
     // Sorting
@@ -154,21 +127,45 @@ const JobList = () => {
     setEditingJob(job);
     form.setFieldsValue({
       ...job,
-      postingDate: moment(job.postingDate)
+      postingDate: job.postingDate ? moment(job.postingDate) : null
     });
     setVisible(true);
   };
 
   const handleDeleteJob = async (id) => {
     try {
-      // In a real app: await axios.delete(`http://localhost:5000/api/jobs/${id}`);
-      setJobs(jobs.filter(job => job.id !== id));
+      await axios.delete(`http://localhost:3000/jobs/${id}`);
+      setJobs(jobs.filter(job => job._id !== id));
       message.success('Job deleted successfully');
     } catch (error) {
+      console.error('Error deleting job:', error);
       message.error('Failed to delete job');
     }
   };
 
+  // const handleSubmit = async () => {
+  //   try {
+  //     const values = await form.validateFields();
+  //     values.postingDate = values.postingDate?.format('YYYY-MM-DD') || new Date().toISOString().split('T')[0];
+      
+  //     if (editingJob) {
+  //       // Update existing job
+  //       const response = await axios.put(`http://localhost:3000/jobs/${editingJob._id}`, values);
+  //       setJobs(jobs.map(job => job._id === editingJob._id ? response.data : job));
+  //       message.success('Job updated successfully');
+  //     } else {
+  //       // Add new job
+  //       const response = await axios.post('http://localhost:3000/jobs', values);
+  //       setJobs([...jobs, response.data]);
+  //       message.success('Job added successfully');
+  //     }
+      
+  //     setVisible(false);
+  //   } catch (error) {
+  //     console.error('Error submitting form:', error);
+  //     message.error('Error submitting form');
+  //   }
+  // };
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
@@ -195,7 +192,6 @@ const JobList = () => {
       message.error('Error submitting form');
     }
   };
-
   return (
     <div className="job-list-container">
       <div className="filters-section">
@@ -304,9 +300,9 @@ const JobList = () => {
       <Row gutter={16} className="job-cards-container">
         {filteredJobs.length > 0 ? (
           filteredJobs.map(job => (
-            <Col xs={24} sm={12} md={8} lg={6} key={job.id} style={{ marginBottom: 16 }}>
+            <Col xs={24} sm={12} md={8} lg={6} key={job._id} style={{ marginBottom: 16 }}>
               <Card
-                title={job.title}
+                title={job.title || 'Untitled Position'}
                 extra={
                   <Space>
                     <Button 
@@ -316,7 +312,7 @@ const JobList = () => {
                     />
                     <Popconfirm
                       title="Are you sure to delete this job?"
-                      onConfirm={() => handleDeleteJob(job.id)}
+                      onConfirm={() => handleDeleteJob(job._id)}
                       okText="Yes"
                       cancelText="No"
                     >
@@ -325,16 +321,16 @@ const JobList = () => {
                   </Space>
                 }
               >
-                <p><strong>Company:</strong> {job.company}</p>
-                <p><strong>Location:</strong> {job.location}</p>
-                <p><strong>Type:</strong> {job.jobType}</p>
-                <p><strong>Posted:</strong> {moment(job.postingDate).format('MMM D, YYYY')}</p>
+                <p><strong>Company:</strong> {job.company || 'Not specified'}</p>
+                <p><strong>Location:</strong> {job.location || 'Not specified'}</p>
+                <p><strong>Type:</strong> {job.jobType || 'Not specified'}</p>
+                <p><strong>Posted:</strong> {job.postingDate ? moment(job.postingDate).format('MMM D, YYYY') : 'Unknown date'}</p>
                 <div>
                   <strong>Tags:</strong>
                   <div style={{ marginTop: 8 }}>
-                    {job.tags.map(tag => (
+                    {job.tags?.map(tag => (
                       <Tag key={tag}>{tag}</Tag>
-                    ))}
+                    )) || <Tag>No tags</Tag>}
                   </div>
                 </div>
               </Card>
