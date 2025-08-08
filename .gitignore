@@ -1,0 +1,55 @@
+
+# Node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs/
+*.log
+logs/*.log
+npm-debug.log
+yarn-debug.log
+pnpm-debug.log
+
+# Build outputs
+dist/
+build/
+.cache/
+.next/
+out/
+
+# Editor/OS specific files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Dependency lockfiles (optional)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# MongoDB data (if using local database)
+data/
+dump/
+
+
+backend/node_modules
+backend/.env
+backend/uploads
+admin/node_modules
+admin/.env
+frontend/node_modules
+frontend/.env
